@@ -115,7 +115,7 @@ docker compose up --build
 
 ---
 
-## 🧪 Pruebas
+## Pruebas
 
 ### Crear orden
 
@@ -146,7 +146,7 @@ POST /api/orders
 
 ---
 
-## 🏗️ Decisiones técnicas
+##  Decisiones técnicas
 
 ### 1. Separación de responsabilidades
 
@@ -171,7 +171,7 @@ Todo el sistema se levanta con un solo comando, facilitando pruebas y despliegue
 
 ---
 
-## 📈 Escalabilidad
+##  Escalabilidad
 
 Este diseño permite:
 
@@ -182,7 +182,7 @@ Este diseño permite:
 
 ---
 
-## 🔮 Posibles mejoras
+##  Posibles mejoras
 
 - Autenticación de usuarios (JWT externo)
 - Uso de API Gateway
