@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'nest_validator' => [
+    'url' => env('NEST_VALIDATOR_URL', 'http://127.0.0.1:3000'),
+],
+
 ];

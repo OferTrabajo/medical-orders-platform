@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Http;
 use Throwable;
 
 class ValidateOrderJob implements ShouldQueue
@@ -23,26 +24,48 @@ class ValidateOrderJob implements ShouldQueue
             return;
         }
 
-        $errors = [];
+        $payload = [
+            'items' => $order->items->map(function ($item) {
+                return [
+                    'type' => $item->type,
+                    'name' => $item->name,
+                    'price' => (float) $item->price,
+                ];
+            })->values()->toArray(),
+        ];
 
-        foreach ($order->items as $item) {
-            if ($item->type === 'medication' && $item->price > 20000) {
-                $errors[] = "Medication '{$item->name}' exceeds the allowed price limit.";
-            }
-        }
+        $response = Http::timeout(10)
+            ->acceptJson()
+            ->post(config('services.nest_validator.url') . '/validate-items', $payload);
 
-        if (!empty($errors)) {
+        if (!$response->successful()) {
             $order->update([
-                'status' => 'rejected',
-                'validation_reason' => implode(' ', $errors),
+                'status' => 'failed',
+                'validation_reason' => 'Validation service returned an unexpected response',
             ]);
 
             return;
         }
 
+        $result = $response->json();
+
+        if (($result['valid'] ?? false) === true) {
+            $order->update([
+                'status' => 'approved',
+                'validation_reason' => null,
+            ]);
+
+            return;
+        }
+
+        $errors = collect($result['errors'] ?? [])
+            ->pluck('reason')
+            ->filter()
+            ->implode(' | ');
+
         $order->update([
-            'status' => 'approved',
-            'validation_reason' => null,
+            'status' => 'rejected',
+            'validation_reason' => $errors !== '' ? $errors : 'Validation failed',
         ]);
     }
 
@@ -59,4 +82,4 @@ class ValidateOrderJob implements ShouldQueue
             'validation_reason' => $exception?->getMessage() ?? 'Unknown queue error',
         ]);
     }
-}
+}   
