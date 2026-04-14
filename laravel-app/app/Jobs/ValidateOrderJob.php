@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
 use Throwable;
+use App\Services\ServiceTokenService;
 
 class ValidateOrderJob implements ShouldQueue
 {
@@ -34,10 +35,12 @@ class ValidateOrderJob implements ShouldQueue
             })->values()->toArray(),
         ];
 
-        $response = Http::timeout(10)
-            ->acceptJson()
-            ->post(config('services.nest_validator.url') . '/validate-items', $payload);
+       $serviceToken = app(ServiceTokenService::class)->generate();
 
+$response = Http::timeout(10)
+    ->acceptJson()
+    ->withToken($serviceToken)
+    ->post(config('services.nest_validator.url') . '/validate-items', $payload);
         if (!$response->successful()) {
             $order->update([
                 'status' => 'failed',
